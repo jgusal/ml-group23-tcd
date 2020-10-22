@@ -7,8 +7,15 @@ URL = 'https://api.jcdecaux.com/vls/v1/stations?apiKey=a9e2b6162328756a94ef2d8af
 INTERVAL = 15 * 60
 
 while True:
-    request = requests.get(URL)
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with open('./json/%s' % timestamp, 'w') as out:
-        out.write(request.text)
+    
+    try:    
+        request = requests.get(URL)
+        request.raise_for_status()
+        with open('./json/%s.json' % timestamp, 'w') as out:
+            out.write(request.text)
+    except requests.exceptions.RequestException as ex:
+        with open('./error/%s' % timestamp, 'w') as out:
+            out.write(str(ex))
+            
     sleep(INTERVAL)
