@@ -7,7 +7,7 @@ URL = 'https://api.jcdecaux.com/vls/v1/stations?apiKey=a9e2b6162328756a94ef2d8af
 INTERVAL = 15 * 60
 
 while True:
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     
     try:    
         request = requests.get(URL)
