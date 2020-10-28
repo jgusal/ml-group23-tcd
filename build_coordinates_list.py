@@ -21,7 +21,7 @@ for k, v in cities.items():
             j_coor = (v[j]['position']['lat'], v[j]['position']['lng'])
             if i == j:
                 continue
-            if haversine(i_coor, j_coor) > 8.17:
+            if haversine(i_coor, j_coor) > 8.48:
                 geodata_dump.append(v[i])
                 break
 
