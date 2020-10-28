@@ -25,6 +25,5 @@ for k, v in cities.items():
                 geodata_dump.append(v[i])
                 break
 
-print(len(geodata_dump))
 
 json.dump(geodata_dump, open("./geocoords.json", "w"))
