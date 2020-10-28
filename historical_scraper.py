@@ -23,10 +23,10 @@ while True:
         try:    
             request = requests.get(req_url)
             request.raise_for_status()
-            with open('./json/%s_%s_%s.json' % (i["position"]['lat'], i["position"]['lng'], req_timestamp), 'w') as out:
+            with open('./history_json/%s_%s_%s.json' % (i["position"]['lat'], i["position"]['lng'], req_timestamp), 'w') as out:
                 json.dump(request.json(), out)
         except Exception as ex:
-            with open('./error/%s_%s_%s.json' % (i["position"]['lat'], i["position"]['lng'], req_timestamp), 'w') as out:
+            with open('./history_error/%s_%s_%s.json' % (i["position"]['lat'], i["position"]['lng'], req_timestamp), 'w') as out:
                 out.write(str(ex))
         if request_number % 59 == 0 and request_number != 0:
             request_number = 0
