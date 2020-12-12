@@ -1,0 +1,17 @@
+timestamp time,
+contract_name factor,
+positionx double,
+positiony double,
+address factor,
+banking boolean,
+bonus boolean,
+overflow boolean,
+status boolean,
+mainStands_availabilities int,
+mainStands_bikes int,
+mainStands_capacity int,
+overflowStands_availabilities int,
+overflowStands_bikes int,
+overflowStands_capacity int,
+
+  

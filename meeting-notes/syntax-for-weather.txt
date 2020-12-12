@@ -1,0 +1,20 @@
+timestamp time,
+city factor,
+lon double,
+lat double,
+weather_main factor,
+weather_description factor,
+main_temp double,
+temp_min double,
+temp_max double,
+pressure double,
+humidity double,
+visibility int,
+wind_speed double,
+clouds_all int,
+sunrise_morning int (minutes since sun has rise),
+sunrise_sundown int (minutes until sundown),
+
+
+
+

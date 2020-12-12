@@ -1,0 +1,31 @@
+city (weather) and contract_name (bikes)
+
+timestamp time,
+city factor,
+weather_main factor,
+weather_description factor,
+main_temp double,
+temp_min double,
+temp_max double,
+pressure double,
+humidity double,
+visibility int,
+wind_speed double,
+clouds_all int,
+sunrise_morning int (minutes since sun has rise),
+sunrise_sundown int (minutes until sundown),
+address factor,
+banking boolean,
+bonus boolean,
+overflow boolean,
+status boolean,
+mainStands_availabilities int,
+mainStands_bikes int,
+mainStands_capacity int,
+overflowStands_availabilities int,
+overflowStands_bikes int,
+overflowStands_capacity int,
+
+
+
+

@@ -1,0 +1,5 @@
+RNN - great for time series
+Random forest - 
+Bagging & Boosting - 
+
+
