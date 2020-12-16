@@ -1,11 +1,8 @@
 import csv
-import json
 import os
-import shutil
-import datetime
 
-input_data_directory = "data/select_data/weather.csv"
-output_data = "data/transform_data/merged_data.csv"
+input_data_directory = "../data/preprocessed_data/weather.csv"
+output_data = "../data/transformed_data/merged_data.csv"
 try:
     os.remove(output_data)
 except:
@@ -25,7 +22,7 @@ with open(input_data_directory) as weather_csvfile:
             clouds_all_weather, weather_weather, sunrise_weather, 
             sundown_weather,
         ) = weather_row
-        with open("data/preprocess/bikes.csv") as bikes_csvfile:
+        with open("../data/preprocessed_data/bikes.csv") as bikes_csvfile:
             bikes_reader = csv.reader(bikes_csvfile)
             for bike_row in bikes_reader:
                 (
