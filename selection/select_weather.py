@@ -1,10 +1,9 @@
 import csv
 import json
 import os
-import shutil
 
-input_data_directory = "data/ml_scraper/weather"
-output_data = "data/select_data/weather.csv"
+input_data_directory = "../data/scraper_data/weather"
+output_data = "../data/selected_data/weather.csv"
 try:
     os.remove(output_data)
 except:
