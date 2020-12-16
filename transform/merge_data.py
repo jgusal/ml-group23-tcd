@@ -4,7 +4,7 @@ import os
 import shutil
 import datetime
 
-input_data_directory = "data/select_data/weather.csv"
+input_data_directory = "data/preprocess/weather.csv"
 output_data = "data/transform_data/merged_data.csv"
 try:
     os.remove(output_data)
@@ -33,8 +33,21 @@ with open(input_data_directory) as weather_csvfile:
                     bonus_bikes, status_bikes, bike_stands_bikes, 
                     available_bike_stands_bikes, available_bikes_bikes,
                 ) = bike_row
-                if city_weather == city_bikes and time_stamp_weather == time_bikes:
-                    print(1)
+                date_weather = datetime.datetime.strptime(time_stamp_weather, '%Y-%m-%d_%H-%M-%S')
+                date_bikes = datetime.datetime.strptime(time_bikes, '%Y-%m-%d_%H-%M-%S')
+                date_weather_merge = datetime.datetime(
+                    year=date_weather.year, 
+                    month=date_weather.month, 
+                    day=date_weather.day, 
+                    hour=date_weather.hour
+                )
+                date_bikes_merge = datetime.datetime(
+                    year=date_bikes.year, 
+                    month=date_bikes.month, 
+                    day=date_bikes.day, 
+                    hour=date_bikes.hour
+                )
+                if city_weather == city_bikes and date_weather_merge == date_bikes_merge:
                     weather_writer.writerow(
                         [
                             time_stamp_weather, city_weather, temp_weather, 
