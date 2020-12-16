@@ -20,6 +20,7 @@ for file in data_files:
             file_json_data = json.load(file_contents)
             time_stamp = file_json_data['timestamp']
             for record in file_json_data['payload']:
+                print(record)
                 weather = " ".join([desc["description"] for desc in record['weather']["weather"]])
                 city = record["city"]
                 temp = record['weather']['main']["temp"]

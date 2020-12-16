@@ -47,6 +47,12 @@ with open(input_data_directory) as weather_csvfile:
                     day=date_bikes.day, 
                     hour=date_bikes.hour
                 )
+                print(date_bikes_merge)
+                print(date_weather_merge)
+                print(city_weather)
+                print(city_bikes)
+                print(date_weather_merge == date_bikes_merge)
+
                 if city_weather == city_bikes and date_weather_merge == date_bikes_merge:
                     weather_writer.writerow(
                         [
@@ -59,6 +65,8 @@ with open(input_data_directory) as weather_csvfile:
                             available_bike_stands_bikes, available_bikes_bikes
                         ]
                     )
+                if date_weather_merge < date_bikes_merge:
+                    break
 
 
 output_data_file.close()

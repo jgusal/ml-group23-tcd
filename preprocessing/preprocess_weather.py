@@ -31,7 +31,7 @@ with open(input_data_directory) as csvfile:
         sunset_date = datetime.datetime.fromtimestamp(int(row[-1]))
         sunrise_seconds = int((date_time_weather - sunrise_date).total_seconds())
         sunset_seconds = int((date_time_weather - sunset_date).total_seconds())
-        
+        print(date_time_weather)
         weather_writer.writerow(
             [
                 time_stamp, city, temp, 
