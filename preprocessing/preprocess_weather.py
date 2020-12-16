@@ -1,11 +1,9 @@
 import csv
-import json
 import os
-import shutil
 import datetime
 
-input_data_directory = "data/select_data/weather.csv"
-output_data = "data/preprocess/weather.csv"
+input_data_directory = "../data/selected_data/weather.csv"
+output_data = "../data/preprocessed_data/weather.csv"
 try:
     os.remove(output_data)
 except:
