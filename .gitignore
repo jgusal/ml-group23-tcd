@@ -1,2 +1,6 @@
 history_error/
 history_json/
+.idea
+/data/
+
+.DS_Store
