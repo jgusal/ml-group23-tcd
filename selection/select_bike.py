@@ -29,7 +29,7 @@ for file in data_files:
                 bike_stands = record["bike_stands"]
                 available_bike_stands = record["available_bike_stands"]
                 available_bikes = record["available_bikes"]
-                
+                print(city)
                 date_bikes = datetime.datetime.strptime(time_stamp, '%Y-%m-%d_%H-%M-%S')
                 date_bikes_merge = datetime.datetime(
                     year=date_bikes.year, 
@@ -37,19 +37,18 @@ for file in data_files:
                     day=date_bikes.day, 
                     hour=date_bikes.hour
                 )
-                print(date_bikes_merge)
-                print(date_bikes_merge >= datetime.datetime(
-                    year=2020, 
-                    month=10, 
-                    day=28
-                ))
+                # print(date_bikes_merge)
+                # print(date_bikes_merge >= datetime.datetime(
+                #     year=2020, 
+                #     month=10, 
+                #     day=28
+                # ))
 
-                if date_bikes_merge > datetime.datetime(
+                if city == "dublin" and date_bikes_merge > datetime.datetime(
                     year=2020, 
                     month=10, 
                     day=28
                 ):
-                    pass
                 
                     bikes_writer.writerow(
                         [

@@ -20,9 +20,9 @@ for file in data_files:
             file_json_data = json.load(file_contents)
             time_stamp = file_json_data['timestamp']
             for record in file_json_data['payload']:
-                print(record)
                 weather = " ".join([desc["description"] for desc in record['weather']["weather"]])
                 city = record["city"]
+
                 temp = record['weather']['main']["temp"]
                 temp_min = record['weather']['main']["temp_min"]
                 temp_max = record['weather']['main']["temp_max"]
@@ -33,23 +33,24 @@ for file in data_files:
                 clouds_all = record['weather']["clouds"]["all"]
                 sunrise = record['weather']["sys"]["sunrise"]
                 sundown = record['weather']["sys"]["sunset"]
-                weather_writer.writerow(
-                    [
-                        time_stamp,
-                        city,
-                        temp,
-                        temp_min,
-                        temp_max,
-                        pressure,
-                        humidity,
-                        visibility,
-                        wind_speed,
-                        clouds_all,
-                        weather,
-                        sunrise,
-                        sundown
-                    ]
-                    
-                )
+                if city == "dublin":
+                    weather_writer.writerow(
+                        [
+                            time_stamp,
+                            city,
+                            temp,
+                            temp_min,
+                            temp_max,
+                            pressure,
+                            humidity,
+                            visibility,
+                            wind_speed,
+                            clouds_all,
+                            weather,
+                            sunrise,
+                            sundown
+                        ]
+                        
+                    )
 
 output_data_file.close()
