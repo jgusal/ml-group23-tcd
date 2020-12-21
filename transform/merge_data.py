@@ -5,7 +5,7 @@ import shutil
 import datetime
 
 input_data_directory = "data/preprocess/weather.csv"
-output_data = "data/transform_data/merged_data_temp_3.csv"
+output_data = "data/transform_data/merged_data.csv"
 try:
     os.remove(output_data)
 except:
