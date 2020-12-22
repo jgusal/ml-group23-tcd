@@ -108,9 +108,9 @@ def data():
         [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').hour for i in data[0].values]
     ))
 
-    labels = data.loc[:,19]
+    actual_y_value = data.loc[:,19]
     print("loaded")
-    return training_data, labels
+    return training_data, actual_y_value
 
     
 def root_mean_squared_error(y_true, y_pred):
@@ -118,7 +118,7 @@ def root_mean_squared_error(y_true, y_pred):
 
 
 
-training_data, labels = data()
+training_data, actual_y_value = data()
 
 def model_1():
     model = Sequential()
@@ -187,47 +187,47 @@ best_model = None
 best_rmse = None
 best_results = None
 
-for m in models:
+# for m in models:
 
-    ann_results = []
-    kf = KFold(n_splits=5, shuffle=True, random_state=20300057)
-    for train_index, test_index in kf.split(training_data):
-        model = m()
-        x_train_data_fold = training_data[train_index[:], :]
-        y_train_data_fold = labels.iloc[train_index[:]]
-        x_test_data_fold = training_data[test_index, :]
-        y_test_data_fold = labels.iloc[test_index]
+#     ann_results = []
+#     kf = KFold(n_splits=5, shuffle=True, random_state=20300057)
+#     for train_index, test_index in kf.split(training_data):
+#         model = m()
+#         x_train_data_fold = training_data[train_index[:], :]
+#         y_train_data_fold = actual_y_value.iloc[train_index[:]]
+#         x_test_data_fold = training_data[test_index, :]
+#         y_test_data_fold = actual_y_value.iloc[test_index]
 
-        history = model.fit(
-            x_train_data_fold, 
-            y_train_data_fold, 
-            batch_size=30, 
-            epochs=5, 
-            validation_split=0.1, 
-            callbacks=[keras.callbacks.EarlyStopping(monitor='mae', mode='max', patience=2, restore_best_weights=True)])
+#         history = model.fit(
+#             x_train_data_fold, 
+#             y_train_data_fold, 
+#             batch_size=30, 
+#             epochs=10, 
+#             validation_split=0.1, 
+#             callbacks=[keras.callbacks.EarlyStopping(monitor='mae', mode='max', patience=2, restore_best_weights=True)])
 
-        results = model.evaluate(x_test_data_fold, y_test_data_fold)
-        ann_results.append(results)
-        print(ann_results)
+#         results = model.evaluate(x_test_data_fold, y_test_data_fold)
+#         ann_results.append(results)
+#         print(ann_results)
 
-    mean_rmse = [i[0] for i in ann_results]
-    mean_mae = [i[1] for i in ann_results]
+#     mean_rmse = statistics.mean([i[0] for i in ann_results])
+#     mean_mae = statistics.mean([i[1] for i in ann_results])
 
-    if best_model is None or mean_rmse < best_rmse:
-        best_model = m
-        best_rmse = mean_rmse
-        best_results = ann_results
+#     if best_model is None or mean_rmse < best_rmse:
+#         best_model = m
+#         best_rmse = mean_rmse
+#         best_results = ann_results
 
 
-X_train, X_test, y_train, y_test = train_test_split(training_data, labels, test_size=0.25, random_state=11)
 
-best_mean_rmse = [i[0] for i in best_results]
-best_mean_mae = [i[1] for i in best_results]
+# best_mean_rmse = statistics.mean([i[0] for i in best_results])
+# best_mean_mae = statistics.mean([i[1] for i in best_results])
 
-print("average mean rmse", best_mean_rmse)
-print("average mean mae", best_mean_mae)
+# print("average mean rmse", best_mean_rmse)
+# print("average mean mae", best_mean_mae)
 
-model = best_model()
+X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.25, random_state=11)
+model = model_5()
 
 model.summary()
 
@@ -235,30 +235,52 @@ history = model.fit(
     X_train, 
     y_train, 
     batch_size=30, 
-    epochs=20, 
+    epochs=1, 
     validation_split=0.1
     )
 
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'], loc='upper left')
-plt.show()
+plt.title('ANN Root Mean Squared Error')
+plt.ylabel('Root Mean Squared Error')
+plt.xlabel('Epochs')
+plt.legend(['Train', 'Val'], loc='upper left')
+# plt.show()
 plt.clf()
 
 
 plt.plot(history.history['mean_absolute_error'])
 plt.plot(history.history['val_mean_absolute_error'])
-plt.title('model mean_absolute_error')
-plt.ylabel('mean_absolute_error')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'], loc='upper left')
-plt.show()
+plt.title('ANN Mean Absolute Error')
+plt.ylabel('Mean Absolute Error')
+plt.xlabel('Epochs')
+plt.legend(['Train', 'Val'], loc='upper left')
+# plt.show()
 plt.clf()
 
 
 results = model.evaluate(X_test, y_test)
 print(results)
+predictions = [i[0] for i in model.predict(X_test)]
 
+from sklearn.metrics import r2_score
+
+model_r2 = r2_score(y_test, predictions)
+print("r2 value", model_r2)
+
+
+
+kstest_results_actual_values = stats.kstest(y_test, 'norm')
+print("kstest_results_actual_values", kstest_results_actual_values)
+kstest_results_predicted_values = stats.kstest(predictions, 'norm')
+print("kstest_results_predicted_values", kstest_results_predicted_values)
+
+P_VALUE = 0.05
+
+if kstest_results_predicted_values.pvalue <= P_VALUE or kstest_results_predicted_values.pvalue <= P_VALUE:
+    print(stats.kruskal(y_test, predictions))
+    print(stats.mannwhitneyu(y_test, predictions))
+else:
+    levene_results = stats.levene(y_test, predictions)
+    print("levene_results", levene_results)
+    print(stats.ttest_ind(y_test, predictions, equal_var= levene_results.pvalue > P_VALUE))
