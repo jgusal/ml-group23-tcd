@@ -10,8 +10,9 @@ from scipy import stats
 import datetime
 from sklearn.linear_model import Ridge
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+
 
 ## Encode data
 def get_data(csv):
@@ -41,13 +42,16 @@ def get_data(csv):
                            columns=['city', 'weather_desc', 'bike_station_address', 'banking', 'bonus', 'status'])
 
     final = dummy.drop(['banking_False', 'status_False', 'available_bike_stands'], axis=1)
+    final = final.fillna(final.mean())
 
     return final
 
+
+## Split data
 def split_data(full_data):
 
     # Split data into historic and future data to evaluate our future predictions
-    train_size = int(len(full_data) * 0.80)
+    train_size = int(len(full_data) * 0.75)
     historic, future = full_data[0:train_size], full_data[train_size:len(full_data)]
 
     historic_target = historic.available_bikes
@@ -57,6 +61,7 @@ def split_data(full_data):
     future_test = future.drop(['available_bikes'], axis=1)
 
     return historic_train, historic_target, future_test, future_real_target
+
 
 ## Cross-validation
 def cross_val(historic_train, historic_target, future_test, future_real_target):
@@ -71,7 +76,8 @@ def cross_val(historic_train, historic_target, future_test, future_real_target):
     results = gsearch.cv_results_
     return results
 
-csv = "../data/transformed_data/merged_data.csv"
+
+csv = "../data/transform_data/merged_data.csv"
 data = get_data(csv)
 historic_train, historic_target, future_test, future_real_target = split_data(data)
 results = cross_val(historic_train, historic_target, future_test, future_real_target)
@@ -89,7 +95,7 @@ plt.ylabel('MSE')
 plt.legend()
 plt.show()
 
-## Final model
+# Final model
 model = Ridge(alpha = 100)
 model.fit(historic_train, historic_target)
 
@@ -99,19 +105,19 @@ y_train_pred = model.predict(historic_train)
 # Predictions on future data
 y_future_pred = model.predict(future_test)
 
-## Evaluation
-# MSE for training data
-train_mse = mean_squared_error(historic_target, y_train_pred)
-print("Training data MSE: ", train_mse, "\n")
+## MAE for training data
+train_mae = mean_absolute_error(historic_target, y_train_pred)
+print("Training data MAE: ", train_mae, "\n")
 
-# MSE for test data 
+## MAE for test data
+test_mae = mean_absolute_error(future_real_target, y_future_pred)
+print("Test data MAE: ", test_mae, "\n")
+
+## RMSE
 test_mse = mean_squared_error(future_real_target, y_future_pred)
-print("Test data MSE: ", test_mse, "\n")
-
-# RMSE
 test_rmse = np.sqrt(test_mse)
 print("Test data RMSE: ", test_rmse, "\n")
 
-# R-Squared
+## R-Squared
 test_r2 = r2_score(future_real_target, y_future_pred)
 print("Test data R2: ", test_r2, "\n")
