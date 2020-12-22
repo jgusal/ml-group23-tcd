@@ -9,17 +9,11 @@ np.random.seed(11)
 import tensorflow as tf
 tf.random.set_random_seed(11)
 
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
-from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
 plt.rc('font', size=18)
 plt.rcParams['figure.constrained_layout.use'] = True
-import sys
-
-
 
 import statistics
-from sklearn.preprocessing import LabelEncoder
 
 import json
 import sys
@@ -27,24 +21,22 @@ import os
 import warnings
 warnings.simplefilter("ignore")
 
-import numpy as np
+from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.preprocessing import LabelEncoder
+import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.optimizers import Adam
 from keras.optimizers import Adadelta
 from keras.optimizers import RMSprop
 from keras.optimizers import SGD
-import keras
-import pandas as pd
-import tensorflow as tf
 from keras.utils import to_categorical
-from keras.utils import plot_model
+
+import pandas as pd
 
 
-random.seed(42)
-np.random.seed(seed=42)
-from sklearn.preprocessing import LabelEncoder
 
 from scipy import stats
 import datetime
@@ -109,13 +101,15 @@ def root_mean_squared_error(y_true, y_pred):
     return keras.backend.sqrt(keras.backend.mean(keras.backend.square(y_pred - y_true))) 
 
 
-
 training_data, actual_y_value = data()
 
 def model_1():
     model = Sequential()
     model.add(Dense(28, input_shape=(210,), activation='relu'))
-    model.add(Dense(28, activation='relu'))
+    # model.add(Dense(28, activation='relu'))
+    # model.add(Dense(28, activation='relu'))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(28, activation='relu'))
 
     model.add(Dense(1))
 
@@ -171,15 +165,12 @@ def model_5():
 
 
 
-from sklearn.model_selection import KFold
-
 models = [model_1, model_2, model_3, model_4, model_5]
 
 best_model = None
 best_rmse = None
 best_results = None
 
-from sklearn.model_selection import TimeSeriesSplit
 
 
 for m in models:
@@ -222,8 +213,8 @@ print("average mean mae", best_mean_mae)
 
 
 
-X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.2, shuffle = False)
-model = model_5()
+X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.13, shuffle = False)
+model = model_1()
 
 print(X_train)
 print(X_test)
@@ -232,9 +223,9 @@ model.summary()
 history = model.fit(
     X_train, 
     y_train, 
-    batch_size=30, 
-    epochs=1, 
-    validation_split=0.1
+    batch_size=100, 
+    epochs=40, 
+    validation_data=(X_test, y_test)
     )
 
 plt.plot(history.history['loss'])
@@ -243,7 +234,7 @@ plt.title('ANN Root Mean Squared Error')
 plt.ylabel('Root Mean Squared Error')
 plt.xlabel('Epochs')
 plt.legend(['Train', 'Val'], loc='upper left')
-# plt.show()
+plt.show()
 plt.clf()
 
 
@@ -253,7 +244,7 @@ plt.title('ANN Mean Absolute Error')
 plt.ylabel('Mean Absolute Error')
 plt.xlabel('Epochs')
 plt.legend(['Train', 'Val'], loc='upper left')
-# plt.show()
+plt.show()
 plt.clf()
 
 
@@ -261,7 +252,6 @@ results = model.evaluate(X_test, y_test)
 print(results)
 predictions = [i[0] for i in model.predict(X_test)]
 
-from sklearn.metrics import r2_score
 
 model_r2 = r2_score(y_test, predictions)
 print("r2 value", model_r2)

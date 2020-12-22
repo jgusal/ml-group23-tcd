@@ -114,7 +114,7 @@ def data():
 
 training_data, actual_y_value = data()
 
-def model_generator(data, lookback = 1440, delay = 1008, index_start=0, index_end=None,
+def model_generator(data, lookback = 720, delay = 720, index_start=0, index_end=None,
             batch_size=128, step=4):
     index_end = len(data) - delay - 1 if index_end is None else index_end
     i = index_start + lookback
@@ -133,22 +133,11 @@ def model_generator(data, lookback = 1440, delay = 1008, index_start=0, index_en
 
 
 X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.2, shuffle = False)
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, shuffle = False)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.13, shuffle = False)
 
 train_gen = model_generator(X_train)
 val_gen = model_generator(X_val)
 test_gen = model_generator(X_test)
-
-# print()
-
-
-# # This is how many steps to draw from `val_gen`
-# # in order to see the whole validation set:
-# val_steps = int((len(X_val) - lookback) / batch_size)
-
-# # This is how many steps to draw from `test_gen`
-# # in order to see the whole test set:
-# test_steps = int((len(X_test) - lookback) / batch_size)
 
 lookback = 1440 
 batch_size = 128
@@ -158,7 +147,7 @@ from keras import layers
 from keras.optimizers import RMSprop
 
 model = Sequential()
-model.add(LSTM(32, input_shape=(None, 210)))
+model.add(LSTM(32, input_shape=(None, 210), return_sequences=True ))
 model.add(LSTM(32))
 model.add(layers.Dense(1))
 
