@@ -21,7 +21,6 @@ import sys
 import statistics
 from sklearn.preprocessing import LabelEncoder
 
-import random
 import json
 import sys
 import os
@@ -43,10 +42,6 @@ from keras.utils import to_categorical
 from keras.utils import plot_model
 
 
-
-
-
-
 random.seed(42)
 np.random.seed(seed=42)
 from sklearn.preprocessing import LabelEncoder
@@ -57,9 +52,7 @@ import datetime
 def data():
     data = pd.read_csv("data/transform_data/merged_data.csv", header=None)
     Label_enc = LabelEncoder()
-    
-    training_data = np.zeros(shape=(462000, 211))
-
+    training_data = np.zeros(shape=(462000, 210))
 
     training_data[:, 0] = stats.zscore([datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').timestamp() for i in data[0].values])
     training_data[:, 1] = stats.zscore((data.loc[:,2]))
@@ -82,29 +75,28 @@ def data():
 
     training_data[:, 140:142] = to_categorical(Label_enc.fit_transform(data[16].values))
     training_data[:, 142] = stats.zscore((data.loc[:,17]))
-    training_data[:, 143] = stats.zscore((data.loc[:,18]))
     print("loading")
     
-    training_data[:, 144:175] = to_categorical(Label_enc.fit_transform(
+    training_data[:, 143:174] = to_categorical(Label_enc.fit_transform(
             [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').day for i in data[0].values]
     ))
     
 
-    training_data[:, 175:177] = to_categorical(Label_enc.fit_transform(
+    training_data[:, 174:176] = to_categorical(Label_enc.fit_transform(
         [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').weekday() < 5 for i in data[0].values]
     ))
     
 
-    training_data[:, 177:180] = to_categorical(Label_enc.fit_transform(
+    training_data[:, 176:179] = to_categorical(Label_enc.fit_transform(
         [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').month for i in data[0].values]
     ))
     
 
-    training_data[:, 180:187] = to_categorical(Label_enc.fit_transform(
+    training_data[:, 179:186] = to_categorical(Label_enc.fit_transform(
         [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').weekday() for i in data[0].values]
     ))
 
-    training_data[:, 187:211] = to_categorical(Label_enc.fit_transform(
+    training_data[:, 186:210] = to_categorical(Label_enc.fit_transform(
         [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').hour for i in data[0].values]
     ))
 
@@ -122,7 +114,7 @@ training_data, actual_y_value = data()
 
 def model_1():
     model = Sequential()
-    model.add(Dense(28, input_shape=(211,), activation='relu'))
+    model.add(Dense(28, input_shape=(210,), activation='relu'))
     model.add(Dense(28, activation='relu'))
 
     model.add(Dense(1))
@@ -132,7 +124,7 @@ def model_1():
 
 def model_2():
     model = Sequential()
-    model.add(Dense(28, input_shape=(211,), activation='relu'))
+    model.add(Dense(28, input_shape=(210,), activation='relu'))
     model.add(Dense(28, activation='relu'))
     model.add(Dropout(0.5))
 
@@ -144,7 +136,7 @@ def model_2():
 
 def model_3():
     model = Sequential()
-    model.add(Dense(32, input_shape=(211,), activation='relu'))
+    model.add(Dense(32, input_shape=(210,), activation='relu'))
     model.add(Dense(32, activation='relu'))
     # model.add(Dense(16, activation='relu'))
     # model.add(Dropout(0.5))
@@ -156,7 +148,7 @@ def model_3():
 
 def model_4():
     model = Sequential()
-    model.add(Dense(64, input_shape=(211,), activation='relu'))
+    model.add(Dense(64, input_shape=(210,), activation='relu'))
     model.add(Dense(64, activation='relu'))
 
     model.add(Dense(1))
@@ -166,7 +158,7 @@ def model_4():
 
 def model_5():
     model = Sequential()
-    model.add(Dense(32, input_shape=(211,), activation='relu'))
+    model.add(Dense(32, input_shape=(210,), activation='relu'))
     model.add(Dense(32, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(32, activation='relu'))
@@ -187,48 +179,54 @@ best_model = None
 best_rmse = None
 best_results = None
 
-# for m in models:
-
-#     ann_results = []
-#     kf = KFold(n_splits=5, shuffle=True, random_state=20300057)
-#     for train_index, test_index in kf.split(training_data):
-#         model = m()
-#         x_train_data_fold = training_data[train_index[:], :]
-#         y_train_data_fold = actual_y_value.iloc[train_index[:]]
-#         x_test_data_fold = training_data[test_index, :]
-#         y_test_data_fold = actual_y_value.iloc[test_index]
-
-#         history = model.fit(
-#             x_train_data_fold, 
-#             y_train_data_fold, 
-#             batch_size=30, 
-#             epochs=10, 
-#             validation_split=0.1, 
-#             callbacks=[keras.callbacks.EarlyStopping(monitor='mae', mode='max', patience=2, restore_best_weights=True)])
-
-#         results = model.evaluate(x_test_data_fold, y_test_data_fold)
-#         ann_results.append(results)
-#         print(ann_results)
-
-#     mean_rmse = statistics.mean([i[0] for i in ann_results])
-#     mean_mae = statistics.mean([i[1] for i in ann_results])
-
-#     if best_model is None or mean_rmse < best_rmse:
-#         best_model = m
-#         best_rmse = mean_rmse
-#         best_results = ann_results
+from sklearn.model_selection import TimeSeriesSplit
 
 
+for m in models:
 
-# best_mean_rmse = statistics.mean([i[0] for i in best_results])
-# best_mean_mae = statistics.mean([i[1] for i in best_results])
+    ann_results = []
+    for train_index, test_index in TimeSeriesSplit(n_splits=5).split(training_data):
+        model = m()
+        x_train_data_fold = training_data[train_index[:], :]
+        y_train_data_fold = actual_y_value.iloc[train_index[:]]
+        x_test_data_fold = training_data[test_index, :]
+        y_test_data_fold = actual_y_value.iloc[test_index]
 
-# print("average mean rmse", best_mean_rmse)
-# print("average mean mae", best_mean_mae)
+        history = model.fit(
+            x_train_data_fold, 
+            y_train_data_fold, 
+            batch_size=30, 
+            epochs=10, 
+            validation_split=0.1, 
+            callbacks=[keras.callbacks.EarlyStopping(monitor='mae', mode='max', patience=2, restore_best_weights=True)])
 
-X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.25, random_state=11)
+        results = model.evaluate(x_test_data_fold, y_test_data_fold)
+        ann_results.append(results)
+        print(ann_results)
+
+    mean_rmse = statistics.mean([i[0] for i in ann_results])
+    mean_mae = statistics.mean([i[1] for i in ann_results])
+
+    if best_model is None or mean_rmse < best_rmse:
+        best_model = m
+        best_rmse = mean_rmse
+        best_results = ann_results
+
+
+
+best_mean_rmse = statistics.mean([i[0] for i in best_results])
+best_mean_mae = statistics.mean([i[1] for i in best_results])
+
+print("average mean rmse", best_mean_rmse)
+print("average mean mae", best_mean_mae)
+
+
+
+X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.2, shuffle = False)
 model = model_5()
 
+print(X_train)
+print(X_test)
 model.summary()
 
 history = model.fit(
