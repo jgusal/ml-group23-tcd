@@ -1,11 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# ## Import packages
-
-# In[1]:
-
-
 seed = 13
 import os
 os.environ['PYTHONHASHSEED']=str(seed)
@@ -21,15 +13,10 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 
-
-# ## Encode data 
-
-# In[2]:
-
-
+## Encode data
 def get_data(csv):
     data = pd.read_csv(csv, header=None)
-    
+
     data[0] = stats.zscore([datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').timestamp() for i in data[0].values])
     data[2] = stats.zscore((data.loc[:,2]))
     data[3] = stats.zscore((data.loc[:,3]))
@@ -44,24 +31,18 @@ def get_data(csv):
     data[17] = stats.zscore((data.loc[:,17]))
     data[18] = stats.zscore((data.loc[:,18]))
     #data[19] = stats.zscore((data.loc[:,19]))
-    
-    data.columns= ['timestamp', 'city', 'av_temp', 'min_temp', 'max_temp', 'pressure', 
-                   'humidity', 'visibility', 'wind_speed', 'clouds', 'weather_desc', 
-                   'sunrise', 'sundown', 'bike_station_address', 'banking', 'bonus', 
+
+    data.columns= ['timestamp', 'city', 'av_temp', 'min_temp', 'max_temp', 'pressure',
+                   'humidity', 'visibility', 'wind_speed', 'clouds', 'weather_desc',
+                   'sunrise', 'sundown', 'bike_station_address', 'banking', 'bonus',
                    'status', 'total_bike_stands', 'available_bike_stands', 'available_bikes']
-    
-    dummy = pd.get_dummies(data, prefix=['city', 'weather_desc', 'bike_station_address', 'banking', 'bonus', 'status'], 
+
+    dummy = pd.get_dummies(data, prefix=['city', 'weather_desc', 'bike_station_address', 'banking', 'bonus', 'status'],
                            columns=['city', 'weather_desc', 'bike_station_address', 'banking', 'bonus', 'status'])
-    
+
     final = dummy.drop(['banking_False', 'status_False', 'available_bike_stands'], axis=1)
-    
+
     return final
-
-
-# ## Split data
-
-# In[3]:
-
 
 def split_data(full_data):
 
@@ -74,17 +55,12 @@ def split_data(full_data):
 
     historic_train = historic.drop(['available_bikes'], axis=1)
     future_test = future.drop(['available_bikes'], axis=1)
-    
+
     return historic_train, historic_target, future_test, future_real_target
 
-
-# ## Cross-validation
-
-# In[4]:
-
-
+## Cross-validation
 def cross_val(historic_train, historic_target, future_test, future_real_target):
-    
+
     # Cross validation for ridge regression alpha parameter
     model = Ridge()
     param_grid = {'alpha':[0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000, 100000]}
@@ -94,12 +70,6 @@ def cross_val(historic_train, historic_target, future_test, future_real_target):
 
     results = gsearch.cv_results_
     return results
-
-
-# ## Main
-
-# In[5]:
-
 
 csv = "../data/transformed_data/merged_data.csv"
 data = get_data(csv)
@@ -119,40 +89,29 @@ plt.ylabel('MSE')
 plt.legend()
 plt.show()
 
-
-# ## Final model
-
-# In[6]:
-
-
+## Final model
 model = Ridge(alpha = 100)
 model.fit(historic_train, historic_target)
 
 # Predictions on historic data
 y_train_pred = model.predict(historic_train)
 
-# Predictions on future data 
+# Predictions on future data
 y_future_pred = model.predict(future_test)
 
-
-# ## Evaluation
-
-# In[7]:
-
-
-## MSE for training data
+## Evaluation
+# MSE for training data
 train_mse = mean_squared_error(historic_target, y_train_pred)
 print("Training data MSE: ", train_mse, "\n")
 
-## MSE for test data 
+# MSE for test data 
 test_mse = mean_squared_error(future_real_target, y_future_pred)
 print("Test data MSE: ", test_mse, "\n")
 
-## RMSE
+# RMSE
 test_rmse = np.sqrt(test_mse)
 print("Test data RMSE: ", test_rmse, "\n")
 
-## R-Squared
+# R-Squared
 test_r2 = r2_score(future_real_target, y_future_pred)
 print("Test data R2: ", test_r2, "\n")
-
