@@ -12,6 +12,7 @@ from sklearn.linear_model import Ridge
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+import time
 
 
 ## Encode data
@@ -96,6 +97,7 @@ plt.legend()
 plt.show()
 
 # Final model
+start_time = time.time()
 model = Ridge(alpha = 100)
 model.fit(historic_train, historic_target)
 
@@ -104,20 +106,57 @@ y_train_pred = model.predict(historic_train)
 
 # Predictions on future data
 y_future_pred = model.predict(future_test)
+end_time = time.time()
+time_taken = end_time - start_time
 
-## MAE for training data
+
+## Evaluation
+# MAE for training data
 train_mae = mean_absolute_error(historic_target, y_train_pred)
 print("Training data MAE: ", train_mae, "\n")
 
-## MAE for test data
+# MAE for test data
 test_mae = mean_absolute_error(future_real_target, y_future_pred)
 print("Test data MAE: ", test_mae, "\n")
 
-## RMSE
+# RMSE
 test_mse = mean_squared_error(future_real_target, y_future_pred)
 test_rmse = np.sqrt(test_mse)
 print("Test data RMSE: ", test_rmse, "\n")
 
-## R-Squared
+# R-Squared
 test_r2 = r2_score(future_real_target, y_future_pred)
 print("Test data R2: ", test_r2, "\n")
+
+
+## Statistics
+kstest_results_actual_values = stats.kstest(future_real_target, 'norm')
+print("kstest_results_actual_values", kstest_results_actual_values)
+kstest_results_predicted_values = stats.kstest(y_future_pred, 'norm')
+print("kstest_results_predicted_values", kstest_results_predicted_values)
+
+P_VALUE = 0.05
+
+if kstest_results_predicted_values.pvalue <= P_VALUE or kstest_results_predicted_values.pvalue <= P_VALUE:
+    print(stats.kruskal(future_real_target, y_future_pred))
+    print(stats.mannwhitneyu(future_real_target, y_future_pred))
+else:
+    levene_results = stats.levene(future_real_target, y_future_pred)
+    print("levene_results", levene_results)
+    print(stats.ttest_ind(future_real_target, y_future_pred, equal_var= levene_results.pvalue > P_VALUE))
+
+
+## Export results
+n_features = future_test.shape[1]
+
+res = {'MAE': test_mae,
+       'RMSE': test_rmse,
+       'R2': test_r2,
+       'Num Features': n_features,
+       'Time Taken': time_taken
+      }
+
+res_df = pd.DataFrame([res], columns = ['MAE', 'RMSE', 'R2', 'Num Features', 'Time Taken'])
+result = res_df.to_string()
+
+print(result,  file=open('../algorithms/results/RidgeRegression.txt', 'w'))
