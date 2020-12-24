@@ -14,12 +14,7 @@ plt.rc('font', size=18)
 plt.rcParams['figure.constrained_layout.use'] = True
 
 import statistics
-
-import json
-import sys
-import os
-import warnings
-warnings.simplefilter("ignore")
+import time
 
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
@@ -35,7 +30,8 @@ from keras.optimizers import SGD
 from keras.utils import to_categorical
 
 import pandas as pd
-
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 
 
 from scipy import stats
@@ -106,10 +102,6 @@ training_data, actual_y_value = data()
 def model_1():
     model = Sequential()
     model.add(Dense(28, input_shape=(210,), activation='relu'))
-    # model.add(Dense(28, activation='relu'))
-    # model.add(Dense(28, activation='relu'))
-    # model.add(Dropout(0.5))
-    # model.add(Dense(28, activation='relu'))
 
     model.add(Dense(1))
 
@@ -132,8 +124,6 @@ def model_3():
     model = Sequential()
     model.add(Dense(32, input_shape=(210,), activation='relu'))
     model.add(Dense(32, activation='relu'))
-    # model.add(Dense(16, activation='relu'))
-    # model.add(Dropout(0.5))
 
     model.add(Dense(1))
 
@@ -142,8 +132,8 @@ def model_3():
 
 def model_4():
     model = Sequential()
-    model.add(Dense(64, input_shape=(210,), activation='relu'))
-    model.add(Dense(64, activation='relu'))
+    model.add(Dense(254, input_shape=(210,), activation='relu'))
+    model.add(Dense(254, activation='relu'))
 
     model.add(Dense(1))
 
@@ -152,10 +142,10 @@ def model_4():
 
 def model_5():
     model = Sequential()
-    model.add(Dense(32, input_shape=(210,), activation='relu'))
-    model.add(Dense(32, activation='relu'))
+    model.add(Dense(128, input_shape=(210,), activation='relu'))
+    model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(32, activation='relu'))
+    model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
 
     model.add(Dense(1))
@@ -171,6 +161,7 @@ best_model = None
 best_rmse = None
 best_results = None
 
+start_time = time.time()
 
 
 for m in models:
@@ -186,10 +177,10 @@ for m in models:
         history = model.fit(
             x_train_data_fold, 
             y_train_data_fold, 
-            batch_size=30, 
+            batch_size=100, 
             epochs=10, 
             validation_split=0.1, 
-            callbacks=[keras.callbacks.EarlyStopping(monitor='mae', mode='max', patience=2, restore_best_weights=True)])
+        )
 
         results = model.evaluate(x_test_data_fold, y_test_data_fold)
         ann_results.append(results)
@@ -214,7 +205,7 @@ print("average mean mae", best_mean_mae)
 
 
 X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.13, shuffle = False)
-model = model_1()
+model = best_model()
 
 print(X_train)
 print(X_test)
@@ -252,11 +243,14 @@ results = model.evaluate(X_test, y_test)
 print(results)
 predictions = [i[0] for i in model.predict(X_test)]
 
+test_mae = mean_absolute_error(y_test[:len(predictions)], predictions)
+print("Test data MAE: ", test_mae, "\n")
 
-model_r2 = r2_score(y_test, predictions)
-print("r2 value", model_r2)
+test_rmse = mean_squared_error(y_test[:len(predictions)], predictions, squared= False)
+print("Test data RMSE: ", test_rmse, "\n")
 
-
+test_r2 = r2_score(y_test[:len(predictions)], predictions)
+print("Test data R2: ", test_r2, "\n")
 
 kstest_results_actual_values = stats.kstest(y_test, 'norm')
 print("kstest_results_actual_values", kstest_results_actual_values)
@@ -272,3 +266,17 @@ else:
     levene_results = stats.levene(y_test, predictions)
     print("levene_results", levene_results)
     print(stats.ttest_ind(y_test, predictions, equal_var= levene_results.pvalue > P_VALUE))
+
+end_time = time.time()
+time_taken = end_time - start_time
+
+res = {'MAE': test_mae,
+       'RMSE': test_rmse,
+       'R2': test_r2,
+       'Time Taken': time_taken
+      }
+
+res_df = pd.DataFrame([res], columns = ['MAE', 'RMSE', 'R2', 'Time Taken'])
+result = res_df.to_string()
+
+print(result,  file=open('ann.txt', 'w'))

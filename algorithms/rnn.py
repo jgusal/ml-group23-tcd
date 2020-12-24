@@ -1,64 +1,44 @@
 import os
 os.environ['PYTHONHASHSEED']=str(11)
 import matplotlib
-matplotlib.use("TkAgg")
 import random
 random.seed(11)
 import numpy as np
 np.random.seed(11)
 import tensorflow as tf
-tf.random.set_random_seed(11)
-
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
-from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
 plt.rc('font', size=18)
 plt.rcParams['figure.constrained_layout.use'] = True
-import sys
 
-
-
+from keras.metrics import RootMeanSquaredError as RMSE
+import time
 import statistics
 from sklearn.preprocessing import LabelEncoder
 
-import json
-import sys
-import os
-import warnings
-warnings.simplefilter("ignore")
-
-import numpy as np
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, LSTM
 from keras.optimizers import Adam
 from keras.optimizers import Adadelta
-from keras.optimizers import RMSprop
-from keras.optimizers import SGD
 import keras
 import pandas as pd
-import tensorflow as tf
 from keras.utils import to_categorical
-from keras.utils import plot_model
-
-
-random.seed(42)
-np.random.seed(seed=42)
-from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 
 from scipy import stats
 import datetime
-
-
-
+from sklearn.metrics import r2_score
+import pandas as pd
 
 def data():
-    data = pd.read_csv("data/transform_data/merged_data.csv", header=None)
+    data = pd.read_csv("merged_data.csv", header = None)
     Label_enc = LabelEncoder()
     training_data = np.zeros(shape=(462000, 210))
+    training_data[:, 1] = stats.zscore([datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').timestamp() for i in data[0].values])
 
-    # training_data[:, 0] = stats.zscore([datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').timestamp() for i in data[0].values])
-    training_data[:, 0] = stats.zscore((data.loc[:,2]))
+    training_data[:, 0] = stats.zscore((data.loc[:,2] ))
+    
     training_data[:, 2] = stats.zscore((data.loc[:,3]))
     
     training_data[:, 3] = stats.zscore((data.loc[:,4]))
@@ -68,18 +48,16 @@ def data():
     
     training_data[:, 7] = stats.zscore((data.loc[:,8]))
     training_data[:, 8] = stats.zscore((data.loc[:,9]))
-    training_data[:, 9:24] = to_categorical(Label_enc.fit_transform(data[10].values))
+    training_data[:, 9:24] = to_categorical(Label_enc.fit_transform(data.loc[:,10].values))
     training_data[:, 24] = stats.zscore((data.loc[:,11]))
     
     training_data[:, 25] = stats.zscore((data.loc[:,12]))
-    training_data[:, 26:136] = to_categorical(Label_enc.fit_transform(data[13].values))
+    training_data[:, 26:136] = to_categorical(Label_enc.fit_transform(data.loc[:,13].values))
     training_data[:, 136:138] = to_categorical(data[14].values)
-    training_data[:, 139] = to_categorical(Label_enc.fit_transform(data[15].values)).flatten()
+    training_data[:, 139] = to_categorical(Label_enc.fit_transform(data.loc[:,15].values)).flatten()
 
-    training_data[:, 140:142] = to_categorical(Label_enc.fit_transform(data[16].values))
+    training_data[:, 140:142] = to_categorical(Label_enc.fit_transform(data.loc[:,16].values))
     training_data[:, 142] = stats.zscore((data.loc[:,17]))
-
-
 
     training_data[:, 143:174] = to_categorical(Label_enc.fit_transform(
             [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').day for i in data[0].values]
@@ -104,243 +82,136 @@ def data():
         [datetime.datetime.strptime(i, '%Y-%m-%d_%H-%M-%S').hour for i in data[0].values]
     ))
 
-    actual_y_value = data.loc[:,19]
-    training_data[:, 1] = data.loc[:,19]
-
-    # print(actual_y_value)
+    actual_y_value = data.iloc[:,19]
 
     return training_data, actual_y_value
 
-
 training_data, actual_y_value = data()
 
-def model_generator(data, lookback = 720, delay = 720, index_start=0, index_end=None,
-            batch_size=128, step=4):
-    index_end = len(data) - delay - 1 if index_end is None else index_end
-    i = index_start + lookback
+split_fraction = 0.715
+train_split = int(split_fraction * len(training_data))
+step = 4
+
+past = 720
+future = 72
+learning_rate = 0.001
+batch_size = 256
+epochs = 10
+
+start_time = time.time()
+
+step = 4
+
+past = 720
+future = 72
+learning_rate = 0.001
+batch_size = 256
+epochs = 10
+
+start = past + future
+end = start + train_split
+
+sequence_length = int(past / step)
+
+X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.13, shuffle = False)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, shuffle = False)
+
+dataset_train = keras.preprocessing.timeseries_dataset_from_array(
+    X_train,
+    y_train,
+    sequence_length=sequence_length,
+    sampling_rate=step,
+    batch_size=batch_size,
+)
+
+
+dataset_val = keras.preprocessing.timeseries_dataset_from_array(
+    X_val,
+    y_val,
+    sequence_length=sequence_length,
+    sampling_rate=step,
+    batch_size=batch_size,
+)
+
+dataset_test = keras.preprocessing.timeseries_dataset_from_array(
+    X_test,
+    y_test,
+    sequence_length=sequence_length,
+    sampling_rate=step,
+    batch_size=batch_size,
+)
+
+def root_mean_squared_error(y_true, y_pred):
+    return keras.backend.sqrt(keras.backend.mean(keras.backend.square(y_pred - y_true))) 
+
+
+for batch in dataset_train.take(1):
+    inputs, targets = batch
+
+inputs = keras.layers.Input(shape=(inputs.shape[1], inputs.shape[2]))
+lstm_out = keras.layers.LSTM(32)(inputs)
+outputs = keras.layers.Dense(1)(lstm_out)
+
+model = keras.Model(inputs=inputs, outputs=outputs)
+model.compile(optimizer=keras.optimizers.Adam(learning_rate=learning_rate), loss="mse", metrics = ["mae"])
     
-    while True:
-        i = index_start + lookback if i + batch_size >= index_end else i
-        generator_sample = np.arange(i, min(i + batch_size, index_end))
-        i += len(generator_sample)
 
-        X = np.zeros((len(generator_sample), int(lookback / step), 210))
-        y = np.zeros((len(generator_sample),))
-        for j in range(len(generator_sample)):
-            X[j] = data[range(generator_sample[j] - lookback, generator_sample[j], step)]
-            y[j] = data[generator_sample[j] + delay, 1]
-        yield X, y
+print(dataset_train)
+print("Input shape:", inputs)
+print("Target shape:", targets)
 
-
-X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.2, shuffle = False)
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.13, shuffle = False)
-
-train_gen = model_generator(X_train)
-val_gen = model_generator(X_val)
-test_gen = model_generator(X_test)
-
-lookback = 1440 
-batch_size = 128
-
-from keras.models import Sequential
-from keras import layers
-from keras.optimizers import RMSprop
-
-model = Sequential()
-model.add(LSTM(32, input_shape=(None, 210), return_sequences=True ))
-model.add(LSTM(32))
-model.add(layers.Dense(1))
-
-model.compile(optimizer=RMSprop(), loss='mae')
-history = model.fit_generator(train_gen,
-    steps_per_epoch=500,
+history = model.fit(
+    dataset_train,
     epochs=20,
-    validation_data=val_gen,
-    validation_steps=int((len(X_val) - lookback) / batch_size))
+    validation_data=dataset_val,
+)
 
-model.predict_generator(test_gen, steps=int((len(X_test) - lookback) / batch_size))
+end_time = time.time()
+time_taken = end_time - start_time
 
-print(history.history)
-    
-# def root_mean_squared_error(y_true, y_pred):
-#     return keras.backend.sqrt(keras.backend.mean(keras.backend.square(y_pred - y_true))) 
+predictions = [i[0] for i in model.predict(tf.compat.v1.data.make_one_shot_iterator(dataset_test))]
 
+test_rmse = mean_squared_error(y_test[:len(predictions)], predictions, squared= False)
 
+test_mae = mean_absolute_error(y_test[:len(predictions)], predictions)
+print("Test data MAE: ", test_mae, "\n")
 
-# training_data, actual_y_value = data()
+test_mse = mean_squared_error(y_test[:len(predictions)], predictions, squared= False)
+test_rmse = np.sqrt(test_mse)
+print("Test data RMSE: ", test_rmse, "\n")
 
-# def model_1():
-#     model = Sequential()
-#     model.add(Dense(64, input_shape=(210,), activation='relu'))
-#     model.add(LSTM(32, input_shape=(210, 7)))
+test_r2 = r2_score(y_test[:len(predictions)], predictions)
+print("Test data R2: ", test_r2, "\n")
 
-#     # model.add(Dense(64, activation='relu'))
-#     # model.add(Dense(64, activation='relu'))
-#     model.add(Dropout(0.5))
-#     # model.add(Dense(64, activation='relu'))
+kstest_results_actual_values = stats.kstest(y_test, 'norm')
+print("kstest_results_actual_values", kstest_results_actual_values)
+kstest_results_predicted_values = stats.kstest(predictions, 'norm')
+print("kstest_results_predicted_values", kstest_results_predicted_values)
 
-#     model.add(Dense(1))
+P_VALUE = 0.05
 
-#     model.compile(optimizer = Adadelta(), loss=root_mean_squared_error, metrics=['mae'])
-#     return model
+if kstest_results_predicted_values.pvalue <= P_VALUE or kstest_results_predicted_values.pvalue <= P_VALUE:
+    print(stats.kruskal(y_test, predictions))
+    print(stats.mannwhitneyu(y_test, predictions))
+else:
+    levene_results = stats.levene(y_test, predictions)
+    print("levene_results", levene_results)
+    print(stats.ttest_ind(y_test, predictions, equal_var= levene_results.pvalue > P_VALUE))
 
-# def model_2():
-#     model = Sequential()
-#     model.add(Dense(28, input_shape=(210,), activation='relu'))
-#     model.add(Dense(28, activation='relu'))
-#     model.add(Dropout(0.5))
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('RNN Mean Squared Error')
+plt.ylabel('Mean Squared Error')
+plt.xlabel('Epochs')
+plt.legend(['Train', 'Val'], loc='upper left')
+plt.show()
+plt.clf()
 
-#     model.add(Dense(1))
-
-#     model.compile(optimizer = Adadelta(), loss=root_mean_squared_error, metrics=['mae'])
-#     return model
-
-
-# def model_3():
-#     model = Sequential()
-#     model.add(Dense(32, input_shape=(210,), activation='relu'))
-#     model.add(Dense(32, activation='relu'))
-#     # model.add(Dense(16, activation='relu'))
-#     # model.add(Dropout(0.5))
-
-#     model.add(Dense(1))
-
-#     model.compile(optimizer = Adadelta(), loss=root_mean_squared_error, metrics=['mae'])
-#     return model
-
-# def model_4():
-#     model = Sequential()
-#     model.add(Dense(64, input_shape=(210,), activation='relu'))
-#     model.add(Dense(64, activation='relu'))
-
-#     model.add(Dense(1))
-
-#     model.compile(optimizer = Adadelta(), loss=root_mean_squared_error, metrics=['mae'])
-#     return model
-
-# def model_5():
-#     model = Sequential()
-#     model.add(Dense(32, input_shape=(210,), activation='relu'))
-#     model.add(Dense(32, activation='relu'))
-#     model.add(Dropout(0.5))
-#     model.add(Dense(32, activation='relu'))
-#     model.add(Dropout(0.5))
-
-#     model.add(Dense(1))
-
-#     model.compile(optimizer = Adadelta(), loss=root_mean_squared_error, metrics=['mae'])
-#     return model
-
-
-
-# # from sklearn.model_selection import KFold
-
-# # models = [model_1, model_2, model_3, model_4, model_5]
-
-# # best_model = None
-# # best_rmse = None
-# # best_results = None
-
-# # from sklearn.model_selection import TimeSeriesSplit
-
-
-# # for m in models:
-
-# #     ann_results = []
-# #     for train_index, test_index in TimeSeriesSplit(n_splits=5).split(training_data):
-# #         model = m()
-# #         x_train_data_fold = training_data[train_index[:], :]
-# #         y_train_data_fold = actual_y_value.iloc[train_index[:]]
-# #         x_test_data_fold = training_data[test_index, :]
-# #         y_test_data_fold = actual_y_value.iloc[test_index]
-
-# #         history = model.fit(
-# #             x_train_data_fold, 
-# #             y_train_data_fold, 
-# #             batch_size=30, 
-# #             epochs=10, 
-# #             validation_split=0.1, 
-# #             callbacks=[keras.callbacks.EarlyStopping(monitor='mae', mode='max', patience=2, restore_best_weights=True)])
-
-# #         results = model.evaluate(x_test_data_fold, y_test_data_fold)
-# #         ann_results.append(results)
-# #         print(ann_results)
-
-# #     mean_rmse = statistics.mean([i[0] for i in ann_results])
-# #     mean_mae = statistics.mean([i[1] for i in ann_results])
-
-# #     if best_model is None or mean_rmse < best_rmse:
-# #         best_model = m
-# #         best_rmse = mean_rmse
-# #         best_results = ann_results
-
-
-
-# # best_mean_rmse = statistics.mean([i[0] for i in best_results])
-# # best_mean_mae = statistics.mean([i[1] for i in best_results])
-
-# # print("average mean rmse", best_mean_rmse)
-# # print("average mean mae", best_mean_mae)
-
-
-
-# X_train, X_test, y_train, y_test = train_test_split(training_data, actual_y_value, test_size=0.2, shuffle = False)
-# model = model_1()
-
-# print(X_train)
-# print(X_test)
-# model.summary()
-
-# history = model.fit(
-#     X_train, 
-#     y_train, 
-#     batch_size=100, 
-#     epochs=40, 
-#     validation_data=(X_test, y_test)
-#     )
-
-# plt.plot(history.history['loss'])
-# plt.plot(history.history['val_loss'])
-# plt.title('ANN Root Mean Squared Error')
-# plt.ylabel('Root Mean Squared Error')
-# plt.xlabel('Epochs')
-# plt.legend(['Train', 'Val'], loc='upper left')
-# plt.show()
-# plt.clf()
-
-
-# plt.plot(history.history['mean_absolute_error'])
-# plt.plot(history.history['val_mean_absolute_error'])
-# plt.title('ANN Mean Absolute Error')
-# plt.ylabel('Mean Absolute Error')
-# plt.xlabel('Epochs')
-# plt.legend(['Train', 'Val'], loc='upper left')
-# plt.show()
-# plt.clf()
-
-
-# results = model.evaluate(X_test, y_test)
-# print(results)
-# predictions = [i[0] for i in model.predict(X_test)]
-
-# from sklearn.metrics import r2_score
-
-# model_r2 = r2_score(y_test, predictions)
-# print("r2 value", model_r2)
-
-
-
-# kstest_results_actual_values = stats.kstest(y_test, 'norm')
-# print("kstest_results_actual_values", kstest_results_actual_values)
-# kstest_results_predicted_values = stats.kstest(predictions, 'norm')
-# print("kstest_results_predicted_values", kstest_results_predicted_values)
-
-# P_VALUE = 0.05
-
-# if kstest_results_predicted_values.pvalue <= P_VALUE or kstest_results_predicted_values.pvalue <= P_VALUE:
-#     print(stats.kruskal(y_test, predictions))
-#     print(stats.mannwhitneyu(y_test, predictions))
-# else:
-#     levene_results = stats.levene(y_test, predictions)
-#     print("levene_results", levene_results)
-#     print(stats.ttest_ind(y_test, predictions, equal_var= levene_results.pvalue > P_VALUE))
+plt.plot(history.history['mae'])
+plt.plot(history.history['val_mae'])
+plt.title('RNN Mean Absolute Error')
+plt.ylabel('Mean Absolute Error')
+plt.xlabel('Epochs')
+plt.legend(['Train', 'Val'], loc='upper left')
+plt.show()
+plt.clf()

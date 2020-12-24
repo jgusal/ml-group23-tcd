@@ -32,12 +32,7 @@ with open(input_data_directory) as csvfile:
         sunrise_seconds = int((date_time_weather - sunrise_date).total_seconds())
         sunset_seconds = int((date_time_weather - sunset_date).total_seconds())
 
-        day_month = date_time_weather.day
-        is_weekday = date_time_weather.weekday() < 5
-        month = date_time_weather.month
-        weekday = date_time_weather.weekday()
-        hour = date_time_weather.hour
-    
+        
         weather_writer.writerow(
             [
                 time_stamp, city, temp, 
