@@ -1,0 +1,2 @@
+MAE Train	MAE Test	MSE			RMSE		R2			Time Taken
+1.48911		6.9099		74.9242		8.6558		0.05282		571.66273

@@ -1,0 +1,2 @@
+Mae Train	MAE	Test	MSE			RMSE		R2			Num Nodes		Time Taken
+0.42966		7.5569		91.13203	9.546309	0.280574	160917			33.29287
