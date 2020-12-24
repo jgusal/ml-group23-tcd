@@ -1,11 +1,18 @@
 MsC Computer Science - Intelligent Systems
+
 CS7CS4 Machine Learning
+
 Names:
+
 	Joshua Cassidy
+	
 	Daniel Farrell
+	
 	Jorge González
 
+
 Group Assignment
+
 
 # Dependencies
 To be able to run these scripts the following Python 3 libraries are required:
